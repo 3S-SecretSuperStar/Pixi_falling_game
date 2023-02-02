@@ -1,4 +1,12 @@
-import { Application, Sprite, Assets, Text, Container, TilingSprite } from "pixi.js";
+import {
+  Application,
+  Sprite,
+  Assets,
+  Text,
+  Container,
+  TilingSprite,
+  Graphics,
+} from "pixi.js";
 import cnst from "./constants";
 
 class Game {
@@ -29,6 +37,8 @@ class Game {
   gameOverText = null;
   level = 1;
   speedMultiplier = 1 + 0.1 * this.level;
+  healthCont = null;
+  currentHpBar = null;
 
   setup = () => {
     this.setupHud();
@@ -136,6 +146,10 @@ class Game {
   updateLost = (newLost) => {
     this.lostBalls = newLost;
     this.lostText.text = "Lost: " + this.lostBalls;
+    const hpPerc = ((cnst.LOST_ALLOWED - this.lostBalls) / cnst.LOST_ALLOWED) * 100;
+    this.healthCont.removeChild(this.currentHpBar);
+    this.currentHpBar = this.createHpBar(hpPerc, cnst.HEALTH_BAR_COLOR);
+    this.healthCont.addChild(this.currentHpBar);
   };
 
   updateLevel = (change) => {
@@ -181,13 +195,13 @@ class Game {
 
     this.scoreText = new Text("Score: 0");
     this.scoreText.x = this.app.screen.width * 0.05;
-    this.scoreText.y = this.app.screen.height * 0.05;
+    this.scoreText.y = this.app.screen.height * 0.1;
     this.scoreText.zIndex = 100;
     this.app.stage.addChild(this.scoreText);
 
     this.lostText = new Text("Lost: 0");
     this.lostText.x = this.app.screen.width * 0.05;
-    this.lostText.y = this.app.screen.height * 0.1;
+    this.lostText.y = this.app.screen.height * 0.2;
     this.lostText.zIndex = 100;
     this.app.stage.addChild(this.lostText);
 
@@ -196,6 +210,40 @@ class Game {
     this.levelText.y = this.app.screen.height * 0.15;
     this.levelText.zIndex = 100;
     this.app.stage.addChild(this.levelText);
+
+    this.healthCont = new Container();
+    this.healthCont.sortableChildren = true;
+    this.healthCont.x = this.app.screen.width * 0.05;
+    this.healthCont.y = this.app.screen.height * 0.055;
+    this.healthCont.zIndex = 100;
+    this.app.stage.addChild(this.healthCont);
+
+    const blackHpBar = this.createHpBar(cnst.MAX_HP, 0x000000);
+    this.healthCont.addChild(blackHpBar);
+
+    this.currentHpBar = this.createHpBar(cnst.MAX_HP, cnst.HEALTH_BAR_COLOR);
+
+    this.healthCont.addChild(this.currentHpBar);
+
+    const healthText = new Text("HP");
+    healthText.anchor.x = 0.5;
+    healthText.anchor.y = 0.5;
+    healthText.style.fill = 0xff0000;
+    healthText.x = this.healthCont.width / 2;
+    healthText.y = this.healthCont.height / 2;
+    healthText.zIndex = 1;
+    this.healthCont.addChild(healthText);
+  };
+
+  createHpBar = (currentHp, color) => {
+    const hpBar = new Graphics();
+    hpBar.beginFill(color);
+
+    const hpPortion = currentHp / cnst.MAX_HP;
+
+    hpBar.drawPolygon([15, 0, 15 + 160 * hpPortion, 0, 160 * hpPortion, 32, 0, 32]);
+    hpBar.endFill();
+    return hpBar;
   };
 
   setupPaddle = async () => {
