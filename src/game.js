@@ -1,4 +1,4 @@
-import { Application, Sprite, Assets, Text, Container } from "pixi.js";
+import { Application, Sprite, Assets, Text, Container, TilingSprite } from "pixi.js";
 import cnst from "./constants";
 
 class Game {
@@ -122,6 +122,8 @@ class Game {
   };
 
   updateScore = (newScore) => {
+    if (this.lostBalls > 0 && newScore % 8 === 0)
+      this.updateLost(this.lostBalls - 1);
     this.score = newScore;
     this.scoreText.text = "Score: " + this.score;
   };
@@ -133,6 +135,15 @@ class Game {
 
   setupHud = async () => {
     // todo: set anchor to middle for pretty much everything
+
+    const bgTexture = await Assets.load(require("./assets/bg/bg.png"));
+    const bg = new TilingSprite(
+      bgTexture,
+      this.app.screen.width,
+      this.app.screen.height
+    );
+    bg.tileScale.set(0.5, 0.5);
+    this.app.stage.addChild(bg);
 
     this.startPauseCont = new Container();
     const startPauseButtonTexture = await Assets.load(
@@ -169,8 +180,16 @@ class Game {
   };
 
   setupPaddle = async () => {
-    const paddleTexture = await Assets.load(require("./assets/paddle/paddle.png"));
-    this.paddle = Sprite.from(paddleTexture);
+    this.paddleTextureNominal = await Assets.load(
+      require("./assets/paddle/paddle.png")
+    );
+    this.paddleTextureLeft = await Assets.load(
+      require("./assets/paddle/paddleLeft.png")
+    );
+    this.paddleTextureRight = await Assets.load(
+      require("./assets/paddle/paddleRight.png")
+    );
+    this.paddle = Sprite.from(this.paddleTextureNominal);
     this.paddle.scale = { x: 0.16, y: 0.09 };
     this.paddle.x = this.app.screen.width / 2 - this.paddle.width / 2;
     this.paddle.y =
@@ -201,6 +220,12 @@ class Game {
     const movePaddleBy = (amount) => {
       let newX = this.paddle.x + amount;
       setPaddlePosition(newX);
+      if (amount > 0) this.paddle.texture = this.paddleTextureRight;
+      else this.paddle.texture = this.paddleTextureLeft;
+      clearTimeout(this.paddleTextureTimeout);
+      this.paddleTextureTimeout = setTimeout(() => {
+        this.paddle.texture = this.paddleTextureNominal;
+      }, 200);
     };
     const setPaddlePosition = (newX) => {
       if (newX > this.app.screen.width - this.paddle.width) {
@@ -208,7 +233,14 @@ class Game {
       } else if (newX < 0) {
         newX = 0;
       }
+      const lOrR = this.paddle.x < newX;
       this.paddle.x = newX;
+      if (lOrR) this.paddle.texture = this.paddleTextureRight;
+      else this.paddle.texture = this.paddleTextureLeft;
+      clearTimeout(this.paddleTextureTimeout);
+      this.paddleTextureTimeout = setTimeout(() => {
+        this.paddle.texture = this.paddleTextureNominal;
+      }, 200);
     };
   };
 
