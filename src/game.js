@@ -31,7 +31,6 @@ class Game {
   startPauseCont = null;
   startPauseText = null;
   scoreText = null;
-  lostText = null;
   lostBalls = 0;
   score = 0;
   gameOverText = null;
@@ -137,7 +136,11 @@ class Game {
   updateScore = (newScore) => {
     if (newScore % cnst.LEVEL_THRESHOLD === 0) {
       this.updateLevel(1);
-      if (this.lostBalls > 0) this.updateLost(this.lostBalls - 1);
+      const healthThreshold = Math.floor(
+        this.speedMultiplier * cnst.LEVEL_THRESHOLD
+      );
+      if (newScore % healthThreshold === 0 && this.lostBalls > 0)
+        this.updateLost(this.lostBalls - 1);
     }
     this.score = newScore;
     this.scoreText.text = "Score: " + this.score;
@@ -145,7 +148,6 @@ class Game {
 
   updateLost = (newLost) => {
     this.lostBalls = newLost;
-    this.lostText.text = "Lost: " + this.lostBalls;
     const hpPerc = ((cnst.LOST_ALLOWED - this.lostBalls) / cnst.LOST_ALLOWED) * 100;
     this.healthCont.removeChild(this.currentHpBar);
     this.currentHpBar = this.createHpBar(hpPerc, cnst.HEALTH_BAR_COLOR);
@@ -199,12 +201,6 @@ class Game {
     this.scoreText.zIndex = 100;
     this.app.stage.addChild(this.scoreText);
 
-    this.lostText = new Text("Lost: 0");
-    this.lostText.x = this.app.screen.width * 0.05;
-    this.lostText.y = this.app.screen.height * 0.2;
-    this.lostText.zIndex = 100;
-    this.app.stage.addChild(this.lostText);
-
     this.levelText = new Text("Level: 1");
     this.levelText.x = this.app.screen.width * 0.05;
     this.levelText.y = this.app.screen.height * 0.15;
@@ -231,6 +227,7 @@ class Game {
     healthText.style.fill = 0xff0000;
     healthText.x = this.healthCont.width / 2;
     healthText.y = this.healthCont.height / 2;
+    healthText.scale = { x: 0.8, y: 0.8 };
     healthText.zIndex = 1;
     this.healthCont.addChild(healthText);
   };
