@@ -49,7 +49,26 @@ class Game {
     this.app.ticker.add((d) => this.loop(d));
   };
 
+  timerIntervalId = -1;
+  timer = 0;
+  timerLastStint = 0;
+  start = Date.now();
+
+  startPauseTimer = (sOrP) => {
+    if (sOrP) {
+      this.start = Date.now();
+      this.timer += this.timerLastStint;
+      this.timerIntervalId = setInterval(() => {
+        this.timer += 1000;
+      }, 1000);
+    } else {
+      clearInterval(this.timerIntervalId);
+      this.timerLastStint = Date.now() - this.start;
+    }
+  };
+
   loop = (d) => {
+    console.log("this.timer=", this.timer);
     if (!this.inPlay) return;
     const ballsToRemove = [];
     for (let i = 0; i < this.balls.length; i++) {
@@ -94,6 +113,7 @@ class Game {
       return;
     }
     this.inPlay = pause ? false : !this.inPlay;
+    this.startPauseTimer(this.inPlay);
     this.updateStartPauseText(this.inPlay ? "Pause" : "Resume");
   };
 
@@ -114,6 +134,7 @@ class Game {
     this.gameOverText.y = this.app.screen.height * 0.5;
     this.gameOverText.zIndex = 100;
     this.app.stage.addChild(this.gameOverText);
+    this.startPauseTimer(false);
   };
 
   restartGame = () => {
@@ -131,6 +152,7 @@ class Game {
     this.generateBall();
     this.app.stage.removeChild(this.gameOverText);
     this.gameOverText = null;
+    this.startPauseTimer(true);
   };
 
   updateScore = (newScore) => {
