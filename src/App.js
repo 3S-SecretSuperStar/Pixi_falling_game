@@ -1,14 +1,17 @@
 import { useRef, useEffect } from "react";
-import "./App.css";
 import Game from "./game.js";
 
 function App() {
   const view = useRef(null);
-  const app = new Game();
+
+  let gameId = (Math.random() * 10000) | 0;
 
   useEffect(() => {
-    console.log("appending app.view to view");
-    app && view.current.append(app.view);
+    const game = new Game(gameId++);
+    view.current.append(game.view);
+    return () => {
+      game.destroy();
+    };
   }, []);
 
   return <div ref={view}></div>;
