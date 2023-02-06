@@ -150,12 +150,19 @@ class Game {
     this.startPauseGame();
   };
 
+  updateCursor = () => {
+    const newCursor = !this.finished && this.inPlay ? "none" : "initial";
+    this.app.renderer.events.cursorStyles.default = newCursor;
+    this.app.renderer.events.setCursor(newCursor);
+  };
+
   startPauseGame = (pause) => {
     if (!pause && this.finished) {
       this.restartGame();
       return;
     }
     this.inPlay = pause ? false : !this.inPlay;
+    this.updateCursor();
     this.startPauseTimer(this.inPlay);
     this.updateStartPauseText(this.inPlay ? "Pause" : "Resume");
   };
@@ -172,18 +179,21 @@ class Game {
     this.updateStartPauseText("Restart");
     this.inPlay = false;
     this.finished = true;
+    this.updateCursor();
     this.gameOverText = new Text("Game over");
     this.gameOverText.x = this.app.screen.width * 0.5 - this.gameOverText.width / 2;
     this.gameOverText.y = this.app.screen.height * 0.5;
     this.gameOverText.zIndex = 100;
     this.app.stage.addChild(this.gameOverText);
     this.startPauseTimer(false);
+    this.updateLost(cnst.LOST_ALLOWED);
   };
 
   restartGame = () => {
     this.updateStartPauseText("Pause");
     this.inPlay = true;
     this.finished = false;
+    this.updateCursor();
     this.lostBalls = 0;
     this.updateScore(0);
     this.updateLost(0);
