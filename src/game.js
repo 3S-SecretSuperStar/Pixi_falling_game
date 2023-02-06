@@ -103,6 +103,8 @@ class Game {
       second: "2-digit",
     });
     this.timerText.text = "Time: " + formattedTime;
+    if (timerSeconds % cnst.TIME_THRESHOLD === 0 && this.lostBalls > 0)
+      this.updateLost(this.lostBalls - 0.5);
   };
 
   loop = (d) => {
