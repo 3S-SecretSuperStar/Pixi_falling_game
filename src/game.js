@@ -252,13 +252,17 @@ class Game {
     this.startPauseCont = new Container();
     const startPauseButton = Sprite.from(this.startPauseButtonTexture);
     this.startPauseText = new Text();
+    this.startPauseText.scale = { x: 0.8, y: 0.8 };
     this.startPauseCont.addChild(startPauseButton);
     this.startPauseCont.addChild(this.startPauseText);
 
-    startPauseButton.scale = { x: 0.14, y: 0.14 };
+    startPauseButton.scale = {
+      x: Math.max(Math.min(this.app.screen.width / 800, 1), 0.5),
+      y: Math.max(Math.min(this.app.screen.height / 600, 1.9), 1.2),
+    };
 
     this.startPauseCont.x = this.app.screen.width / 2 - startPauseButton.width / 2;
-    this.startPauseCont.y = this.app.screen.height * 0.05;
+    this.startPauseCont.y = this.app.screen.height * 0.053;
     this.startPauseCont.zIndex = 100;
     this.startPauseCont.interactive = true;
     this.wiAddEventListener(this.startPauseCont, "click", this.onStartPauseClick);
@@ -289,7 +293,10 @@ class Game {
     healthText.style.fill = 0xff0000;
     healthText.x = this.healthCont.width / 2;
     healthText.y = this.healthCont.height / 2;
-    healthText.scale = { x: 0.8, y: 0.8 };
+    healthText.scale = {
+      x: 1,
+      y: 1,
+    };
     healthText.zIndex = 1;
     this.healthCont.addChild(healthText);
 
@@ -367,14 +374,21 @@ class Game {
 
     const hpPortion = currentHp / cnst.MAX_HP;
 
-    hpBar.drawPolygon([15, 0, 15 + 160 * hpPortion, 0, 160 * hpPortion, 32, 0, 32]);
+    hpBar.drawPolygon([7, 0, 7 + 80 * hpPortion, 0, 80 * hpPortion, 20, 0, 20]);
     hpBar.endFill();
+    hpBar.scale.x = this.app.screen.width / 300;
+    // hpBar.scale.y = this.app.screen.height / 500;
+    hpBar.scale.y = 1.5;
     return hpBar;
   };
 
   setupPaddle = () => {
     this.paddle = Sprite.from(this.paddleTextureNominal);
-    this.paddle.scale = { x: 0.16, y: 0.09 };
+    // not the best idea when the screen is very wide
+    this.paddle.scale = {
+      x: Math.max(Math.min(this.app.screen.width / 1000, 0.9), 0.35),
+      y: Math.max(Math.min(this.app.screen.height / 1000, 0.9), 0.35),
+    };
     this.paddle.x = this.app.screen.width / 2 - this.paddle.width / 2;
     this.paddle.y =
       this.app.screen.height -
@@ -445,7 +459,11 @@ class Game {
       ball.speed =
         (Math.random() * cnst.MAX_ADDITIONAL_SPEED + cnst.MIN_FALLING_SPEED) *
         this.speedMultiplier;
-      ball.scale = { x: 0.07, y: 0.07 };
+      // not the best idea when the screen is very wide
+      ball.scale = {
+        x: Math.max(Math.min(this.app.screen.width / 1200, 0.7), 0.35),
+        y: Math.max(Math.min(this.app.screen.width / 1200, 0.7), 0.35),
+      };
       ball.x = Math.max(
         Math.min(
           this.app.screen.width - ball.width - cnst.MIN_BALL_SIDE_OFFSET,
