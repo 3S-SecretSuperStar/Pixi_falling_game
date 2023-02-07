@@ -31,6 +31,7 @@ class Game {
     this.timer = 0;
     this.lastTimerStart = 0;
     this.timerIntervalId = 0;
+    this.velocityX = 0.0;
 
     this.app = new Application({
       width: window.innerWidth,
@@ -262,6 +263,7 @@ class Game {
     this.startPauseCont.interactive = true;
     this.wiAddEventListener(this.startPauseCont, "click", this.onStartPauseClick);
     this.wiAddEventListener(this.startPauseCont, "touchend", this.onStartPauseClick);
+    this.initializeGyro();
 
     this.updateStartPauseText("Start");
 
@@ -309,6 +311,54 @@ class Game {
     this.timerText.zIndex = 100;
     this.app.stage.addChild(this.timerText);
     this.updateTimerText(true);
+  };
+
+  initializeGyro = () => {
+    if ("DeviceMotionEvent" in window) {
+      // requestPermission does not exist on android or pc browsers
+      if ("requestPermission" in DeviceMotionEvent) {
+        console.log("getPermission exists");
+        DeviceMotionEvent.requestPermission()
+          .then((response) => {
+            if (response == "granted") {
+              this.wiAddEventListener(window, "deviceorientation", this.onGyro);
+            }
+          })
+          .catch((error) => {
+            // todo: handle it
+            console.log(error);
+          });
+      } else {
+        console.log("requestPermission in DeviceMotionEvent does not exist..");
+        this.wiAddEventListener(window, "deviceorientation", this.onGyro);
+      }
+    } else {
+      // todo: handle it
+      console.log("DeviceMotionEvent in window does not exist..");
+    }
+  };
+
+  onGyro = (event) => {
+    // gamma = Degrees per second around the y axis
+    const gamma = event.gamma;
+
+    if (gamma > 5 || gamma < -5) {
+      let vx;
+      const avx = Math.abs(this.velocityX);
+      // TODO: THIS SHOULD BE A MATHEMATICAL FUNCTION, NOT A SWITCH LOL
+      if (avx < 0.1) vx = this.velocityX * 14;
+      else if (avx < 0.15) vx = this.velocityX * 11;
+      else if (avx < 0.2) vx = this.velocityX * 9;
+      else if (avx < 0.4) vx = this.velocityX * 4;
+      else if (avx < 0.6) vx = this.velocityX * 3.5;
+      else if (avx < 1.2) vx = this.velocityX * 2;
+      else vx = this.velocityX;
+      this.velocityX = vx + gamma * (1 / 120); // 1 / 120 is sth like ... Sensor refresh rate? find out what that is
+
+      this.setPaddlePosition(this.paddle.x + this.velocityX * 3);
+    } else {
+      this.velocityX = 0.0;
+    }
   };
 
   createHpBar = (currentHp, color) => {
