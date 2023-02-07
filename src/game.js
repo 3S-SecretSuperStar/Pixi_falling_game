@@ -14,6 +14,7 @@ class Game {
     this.gameId = gameId;
     this.inPlay = false;
     this.finished = false;
+    this.started = false;
     this.lastId = 0;
     this.paddle = null;
     this.balls = [];
@@ -32,6 +33,9 @@ class Game {
     this.lastTimerStart = 0;
     this.timerIntervalId = 0;
     this.velocityX = 0.0;
+    this.ballTOId = null;
+    this.ballTOStart = null;
+    this.ballTOLeft = null;
 
     this.app = new Application({
       width: window.innerWidth,
@@ -54,8 +58,6 @@ class Game {
     this.setupHud();
 
     this.setupPaddle();
-
-    this.generateBall();
 
     this.app.ticker.add((d) => this.loop(d));
   };
@@ -158,11 +160,20 @@ class Game {
   };
 
   startPauseGame = (pause) => {
-    if (!pause && this.finished) {
+    if (!this.started || (!pause && this.finished)) {
       this.restartGame();
       return;
     }
     this.inPlay = pause ? false : !this.inPlay;
+    if (!this.inPlay) {
+      clearTimeout(this.ballTOId);
+      this.ballTOLeft -= Date.now() - this.ballTOStart;
+    } else if (this.ballTOStart > 0 && this.ballTOLeft > 0) {
+      this.ballTOStart = Date.now();
+      this.ballTOId = setTimeout(() => {
+        this.generateBall();
+      }, this.ballTOLeft);
+    }
     this.updateCursor();
     this.startPauseTimer(this.inPlay);
     this.updateStartPauseText(this.inPlay ? "Pause" : "Resume");
@@ -180,6 +191,7 @@ class Game {
     this.updateStartPauseText("Restart");
     this.inPlay = false;
     this.finished = true;
+    this.started = false;
     this.updateCursor();
     this.gameOverText = new Text("Game over");
     this.gameOverText.x = this.app.screen.width * 0.5 - this.gameOverText.width / 2;
@@ -188,12 +200,16 @@ class Game {
     this.app.stage.addChild(this.gameOverText);
     this.startPauseTimer(false);
     this.updateLost(cnst.LOST_ALLOWED);
+    clearTimeout(this.ballTOId);
   };
 
   restartGame = () => {
+    clearTimeout(this.ballTOId);
+    this.ballTOStart = null;
     this.updateStartPauseText("Pause");
     this.inPlay = true;
     this.finished = false;
+    this.started = true;
     this.updateCursor();
     this.lostBalls = 0;
     this.updateScore(0);
@@ -480,7 +496,9 @@ class Game {
     const spawnInterval =
       (Math.random() * cnst.MAX_SPAWN_TIME + cnst.MIN_SPAWN_TIME) /
       this.speedMultiplier;
-    setTimeout(() => {
+    this.ballTOLeft = spawnInterval;
+    this.ballTOStart = Date.now();
+    this.ballTOId = setTimeout(() => {
       this.generateBall();
     }, spawnInterval);
   };
