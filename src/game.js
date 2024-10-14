@@ -36,16 +36,22 @@ class Game {
     this.ballTOId = null;
     this.ballTOStart = null;
     this.ballTOLeft = null;
+    
+    // this.canvas = document.createElement('canvas');
+    // this.view = this.canvas.transferControlToOffscreen();
+    this.app = new Application();
 
     this.app = new Application({
       width: window.innerWidth,
       height: window.innerHeight,
-      backgroundColor: "gray",
+      backgroundColor: "white",
       resizeTo: window,
     });
+    // document.body.appendChild(this.app.canvas)
     this.app.renderer.view.style.position = "absolute";
     this.view = this.app.view;
     this.app.stage.sortableChildren = true; // to sort everything by zIndex
+    // document.body.appendChild(this.canvas)
     this.setup();
   }
 
@@ -55,10 +61,10 @@ class Game {
 
     if (!this.gameId) return;
 
-    this.setupHud();
+      this.setupHud();
 
     this.setupPaddle();
-
+    
     this.app.ticker.add((d) => this.loop(d));
   };
 
@@ -67,48 +73,48 @@ class Game {
       Assets.load(require("./assets/paddle/paddle.png")),
       Assets.load(require("./assets/paddle/paddleLeft.png")),
       Assets.load(require("./assets/paddle/paddleRight.png")),
-      Assets.load(require("./assets/bg/bg.png")),
-      Assets.load(require("./assets/ball/ball.png")),
+      // Assets.load(require("./assets/bg/bg.png")),
+      Assets.load(require("./assets/image/meteor.png")),
       Assets.load(require("./assets/paddle/paddle.png")),
     ]);
     this.paddleTextureNominal = textures[0];
     this.paddleTextureLeft = textures[1];
     this.paddleTextureRight = textures[2];
-    this.bgTexture = textures[3];
-    this.ballTexture = textures[4];
-    this.startPauseButtonTexture = textures[5];
+    // this.bgTexture = textures[3];
+    this.ballTexture = textures[3];
+    this.startPauseButtonTexture = textures[4];
   };
 
   startPauseTimer = (sOrP) => {
     if (sOrP) {
       this.lastTimerStart = Date.now();
-      this.timerIntervalId = setInterval(() => {
-        this.updateTimerText();
-      }, 1000);
+      // this.timerIntervalId = setInterval(() => {
+      //   // this.updateTimerText();
+      // }, 1000);
     } else {
       clearInterval(this.timerIntervalId);
       this.timer += Date.now() - this.lastTimerStart;
       this.lastTimerStart = Date.now();
-      this.updateTimerText();
+      // this.updateTimerText();
     }
   };
 
-  updateTimerText = (restart) => {
-    const timerSeconds = restart
-      ? 0
-      : Math.floor((this.timer + Date.now() - this.lastTimerStart) / 1000);
-    let newD = new Date(null);
-    newD.setHours(0);
-    newD.setSeconds(timerSeconds);
-    const formattedTime = newD.toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    });
-    this.timerText.text = "Time: " + formattedTime;
-    if (timerSeconds % cnst.TIME_THRESHOLD === 0 && this.lostBalls > 0)
-      this.updateLost(this.lostBalls - 0.5);
-  };
+  // updateTimerText = (restart) => {
+  //   const timerSeconds = restart
+  //     ? 0
+  //     : Math.floor((this.timer + Date.now() - this.lastTimerStart) / 1000);
+  //   let newD = new Date(null);
+  //   newD.setHours(0);
+  //   newD.setSeconds(timerSeconds);
+  //   // const formattedTime = newD.toLocaleTimeString([], {
+  //   //   hour: "2-digit",
+  //   //   minute: "2-digit",
+  //   //   second: "2-digit",
+  //   // });
+  //   // this.timerText.text = "Time: " + formattedTime;
+  //   if (timerSeconds % cnst.TIME_THRESHOLD === 0 && this.lostBalls > 0)
+  //     this.updateLost(this.lostBalls - 0.5);
+  // };
 
   loop = (d) => {
     if (!this.inPlay) return;
@@ -118,10 +124,7 @@ class Game {
       ball.y += ball.speed * d;
       if (ball.y >= this.app.screen.height) {
         ballsToRemove.push(ball);
-        this.updateLost(this.lostBalls + 1);
-        if (this.lostBalls >= cnst.LOST_ALLOWED) {
-          this.gameOver();
-        }
+        // this.updateLost(this.lostBalls + 1);
       } else if (this.ballCollided(ball)) {
         ballsToRemove.push(ball);
         this.updateScore(this.score + 1);
@@ -153,11 +156,11 @@ class Game {
     this.startPauseGame();
   };
 
-  updateCursor = () => {
-    const newCursor = !this.finished && this.inPlay ? "none" : "initial";
-    this.app.renderer.events.cursorStyles.default = newCursor;
-    this.app.renderer.events.setCursor(newCursor);
-  };
+  // updateCursor = () => {
+  //   const newCursor = !this.finished && this.inPlay ? "none" : "initial";
+  //   this.app.renderer.events.cursorStyles.default = newCursor;
+  //   this.app.renderer.events.setCursor(newCursor);
+  // };
 
   startPauseGame = (pause) => {
     if (!this.started || (!pause && this.finished)) {
@@ -174,7 +177,7 @@ class Game {
         this.generateBall();
       }, this.ballTOLeft);
     }
-    this.updateCursor();
+    // this.updateCursor();
     this.startPauseTimer(this.inPlay);
     this.updateStartPauseText(this.inPlay ? "Pause" : "Resume");
   };
@@ -187,21 +190,21 @@ class Game {
       this.startPauseCont.height / 2 - this.startPauseText.height / 2;
   };
 
-  gameOver = () => {
-    this.updateStartPauseText("Restart");
-    this.inPlay = false;
-    this.finished = true;
-    this.started = false;
-    this.updateCursor();
-    this.gameOverText = new Text("Game over");
-    this.gameOverText.x = this.app.screen.width * 0.5 - this.gameOverText.width / 2;
-    this.gameOverText.y = this.app.screen.height * 0.5;
-    this.gameOverText.zIndex = 100;
-    this.app.stage.addChild(this.gameOverText);
-    this.startPauseTimer(false);
-    this.updateLost(cnst.LOST_ALLOWED);
-    clearTimeout(this.ballTOId);
-  };
+  // gameOver = () => {
+  //   this.updateStartPauseText("Restart");
+  //   this.inPlay = false;
+  //   this.finished = true;
+  //   this.started = false;
+  //   // this.updateCursor();
+  //   this.gameOverText = new Text("Game over");
+  //   this.gameOverText.x = this.app.screen.width * 0.5 - this.gameOverText.width / 2;
+  //   this.gameOverText.y = this.app.screen.height * 0.5;
+  //   this.gameOverText.zIndex = 100;
+  //   this.app.stage.addChild(this.gameOverText);
+  //   this.startPauseTimer(false);
+  //   // this.updateLost(cnst.LOST_ALLOWED);
+  //   clearTimeout(this.ballTOId);
+  // };
 
   restartGame = () => {
     clearTimeout(this.ballTOId);
@@ -210,11 +213,11 @@ class Game {
     this.inPlay = true;
     this.finished = false;
     this.started = true;
-    this.updateCursor();
+    // this.updateCursor();
     this.lostBalls = 0;
     this.updateScore(0);
-    this.updateLost(0);
-    this.updateLevel();
+    // this.updateLost(0);
+    // this.updateLevel();
     for (let i = 0; i < this.balls.length; i++) {
       this.app.stage.removeChild(this.balls[i]);
     }
@@ -223,47 +226,40 @@ class Game {
     this.app.stage.removeChild(this.gameOverText);
     this.gameOverText = null;
     this.timer = 0;
-    this.updateTimerText(true);
+    // this.updateTimerText(true);
     this.startPauseTimer(true);
   };
 
   updateScore = (newScore) => {
     if (newScore % cnst.LEVEL_THRESHOLD === 0) {
-      this.updateLevel(1);
-      const healthThreshold = Math.floor(
-        this.speedMultiplier * cnst.LEVEL_THRESHOLD
-      );
-      if (newScore % healthThreshold === 0 && this.lostBalls > 0)
-        this.updateLost(this.lostBalls - 1);
+      // this.updateLevel(1);
+      // const healthThreshold = Math.floor(
+      //   this.speedMultiplier * cnst.LEVEL_THRESHOLD
+      // );
+    //   if (newScore % healthThreshold === 0 && this.lostBalls > 0)
+    //     this.updateLost(this.lostBalls - 1);
     }
     this.score = newScore;
     this.scoreText.text = "Score: " + this.score;
   };
 
-  updateLost = (newLost) => {
-    this.lostBalls = newLost;
-    const hpPerc = ((cnst.LOST_ALLOWED - this.lostBalls) / cnst.LOST_ALLOWED) * 100;
-    this.healthCont.removeChild(this.currentHpBar);
-    this.currentHpBar = this.createHpBar(hpPerc, cnst.HEALTH_BAR_COLOR);
-    this.healthCont.addChild(this.currentHpBar);
-  };
+  // updateLost = (newLost) => {
+  //   this.lostBalls = newLost;
+  //   const hpPerc = ((cnst.LOST_ALLOWED - this.lostBalls) / cnst.LOST_ALLOWED) * 100;
+  //   this.healthCont.removeChild(this.currentHpBar);
+  //   this.currentHpBar = this.createHpBar(hpPerc, cnst.HEALTH_BAR_COLOR);
+  //   this.healthCont.addChild(this.currentHpBar);
+  // };
 
-  updateLevel = (change) => {
-    if (!change) this.level = 1;
-    else this.level += change;
-    this.speedMultiplier = 1 + 0.04 * this.level;
-    this.levelText.text = "Level: " + this.level;
-  };
+  // updateLevel = (change) => {
+  //   if (!change) this.level = 1;
+  //   else this.level += change;
+  //   this.speedMultiplier = 1 + 0.04 * this.level;
+  //   this.levelText.text = "Level: " + this.level;
+  // };
 
   setupHud = () => {
     // todo: set anchor to middle for pretty much everything
-    const bg = new TilingSprite(
-      this.bgTexture,
-      this.app.screen.width,
-      this.app.screen.height
-    );
-    bg.tileScale.set(0.5, 0.5);
-    this.app.stage.addChild(bg);
 
     this.startPauseCont = new Container();
     const startPauseButton = Sprite.from(this.startPauseButtonTexture);
@@ -296,25 +292,25 @@ class Game {
     this.healthCont.zIndex = 100;
     this.app.stage.addChild(this.healthCont);
 
-    const blackHpBar = this.createHpBar(cnst.MAX_HP, 0x000000);
-    this.healthCont.addChild(blackHpBar);
+    // const blackHpBar = this.createHpBar(cnst.MAX_HP, 0x000000);
+    // this.healthCont.addChild(blackHpBar);
 
-    this.currentHpBar = this.createHpBar(cnst.MAX_HP, cnst.HEALTH_BAR_COLOR);
+    // this.currentHpBar = this.createHpBar(cnst.MAX_HP, cnst.HEALTH_BAR_COLOR);
 
-    this.healthCont.addChild(this.currentHpBar);
+    // this.healthCont.addChild(this.currentHpBar);
 
-    const healthText = new Text("HP");
-    healthText.anchor.x = 0.5;
-    healthText.anchor.y = 0.5;
-    healthText.style.fill = 0xff0000;
-    healthText.x = this.healthCont.width / 2;
-    healthText.y = this.healthCont.height / 2;
-    healthText.scale = {
-      x: 1,
-      y: 1,
-    };
-    healthText.zIndex = 1;
-    this.healthCont.addChild(healthText);
+    // const healthText = new Text("HP");
+    // healthText.anchor.x = 0.5;
+    // healthText.anchor.y = 0.5;
+    // healthText.style.fill = 0xff0000;
+    // healthText.x = this.healthCont.width / 2;
+    // healthText.y = this.healthCont.height / 2;
+    // healthText.scale = {
+    //   x: 1,
+    //   y: 1,
+    // };
+    // healthText.zIndex = 1;
+    // this.healthCont.addChild(healthText);
 
     this.scoreText = new Text("Score: 0");
     this.scoreText.x = this.app.screen.width * 0.05;
@@ -322,18 +318,18 @@ class Game {
     this.scoreText.zIndex = 100;
     this.app.stage.addChild(this.scoreText);
 
-    this.levelText = new Text("Level: 1");
-    this.levelText.x = this.app.screen.width * 0.05;
-    this.levelText.y = this.app.screen.height * 0.15;
-    this.levelText.zIndex = 100;
-    this.app.stage.addChild(this.levelText);
+    // this.levelText = new Text("Level: 1");
+    // this.levelText.x = this.app.screen.width * 0.05;
+    // this.levelText.y = this.app.screen.height * 0.15;
+    // this.levelText.zIndex = 100;
+    // this.app.stage.addChild(this.levelText);
 
-    this.timerText = new Text("Time:");
-    this.timerText.x = this.app.screen.width * 0.05;
-    this.timerText.y = this.app.screen.height * 0.2;
-    this.timerText.zIndex = 100;
-    this.app.stage.addChild(this.timerText);
-    this.updateTimerText(true);
+    // this.timerText = new Text("Time:");
+    // this.timerText.x = this.app.screen.width * 0.05;
+    // this.timerText.y = this.app.screen.height * 0.2;
+    // this.timerText.zIndex = 100;
+    // this.app.stage.addChild(this.timerText);
+    // this.updateTimerText(true);
   };
 
   initializeGyro = () => {
@@ -343,7 +339,7 @@ class Game {
         console.log("getPermission exists");
         DeviceMotionEvent.requestPermission()
           .then((response) => {
-            if (response == "granted") {
+            if (response === "granted") {
               this.wiAddEventListener(window, "deviceorientation", this.onGyro);
             }
           })
@@ -384,19 +380,19 @@ class Game {
     }
   };
 
-  createHpBar = (currentHp, color) => {
-    const hpBar = new Graphics();
-    hpBar.beginFill(color);
+  // createHpBar = (currentHp, color) => {
+  //   const hpBar = new Graphics();
+  //   hpBar.beginFill(color);
 
-    const hpPortion = currentHp / cnst.MAX_HP;
+  //   const hpPortion = currentHp / cnst.MAX_HP;
 
-    hpBar.drawPolygon([7, 0, 7 + 80 * hpPortion, 0, 80 * hpPortion, 20, 0, 20]);
-    hpBar.endFill();
-    hpBar.scale.x = this.app.screen.width / 300;
-    // hpBar.scale.y = this.app.screen.height / 500;
-    hpBar.scale.y = 1.5;
-    return hpBar;
-  };
+  //   hpBar.drawPolygon([7, 0, 7 + 80 * hpPortion, 0, 80 * hpPortion, 20, 0, 20]);
+  //   hpBar.endFill();
+  //   hpBar.scale.x = this.app.screen.width / 300;
+  //   // hpBar.scale.y = this.app.screen.height / 500;
+  //   hpBar.scale.y = 1.5;
+  //   return hpBar;
+  // };
 
   setupPaddle = () => {
     this.paddle = Sprite.from(this.paddleTextureNominal);
@@ -405,42 +401,25 @@ class Game {
       x: Math.max(Math.min(this.app.screen.width / 1000, 0.9), 0.35),
       y: Math.max(Math.min(this.app.screen.height / 1000, 0.9), 0.35),
     };
-    this.paddle.x = this.app.screen.width / 2 - this.paddle.width / 2;
-    this.paddle.y =
-      this.app.screen.height -
-      this.paddle.height -
-      this.app.screen.height * cnst.PADDLE_BOTTOM_OFFSET_PERCENTAGE;
-    this.paddle.zIndex = 2;
-    this.paddle.tint = 0xffffff;
+    // this.paddle.x = this.app.screen.width / 2 - this.paddle.width / 2;
+    // this.paddle.y =
+    //   this.app.screen.height -
+    //   this.paddle.height -
+    //   this.app.screen.height * cnst.PADDLE_BOTTOM_OFFSET_PERCENTAGE;
+    // this.paddle.zIndex = 2;
+    // this.paddle.tint = 0xffffff;
 
     // todo: set anchor to middle for pretty much everything
     // this.paddle.anchor.x = 0.5;
     // this.paddle.anchor.y = 0.5;
 
-    this.app.stage.addChild(this.paddle);
+    // this.app.stage.addChild(this.paddle);
 
-    this.wiAddEventListener(document, "keydown", this.onKeyDown);
-    this.wiAddEventListener(document, "mousemove", this.onControllerMove);
-    this.wiAddEventListener(document, "touchmove", this.onControllerMove);
   };
 
   wiAddEventListener = (object, key, cb) => {
     object.addEventListener(key, cb);
     this.eventListeners.push({ object, key, cb });
-  };
-
-  onKeyDown = (e) => {
-    if (!this.inPlay) return;
-    if (e.key === "ArrowRight")
-      this.setPaddlePosition(this.paddle.x + cnst.PADDLE_MOVE_INCREMENT);
-    else if (e.key === "ArrowLeft")
-      this.setPaddlePosition(this.paddle.x - cnst.PADDLE_MOVE_INCREMENT);
-    else if (e.key === "Escape") this.startPauseGame(true);
-  };
-
-  onControllerMove = (e) => {
-    if (e.touches?.length > 0) this.setPaddlePosition(e.touches[0].clientX);
-    else this.setPaddlePosition(e.clientX);
   };
 
   setPaddlePosition = (clientX) => {
@@ -463,7 +442,7 @@ class Game {
       this.paddle.texture = this.paddleTextureNominal;
     }, 200);
   };
-
+ 
   generateBall = () => {
     if (
       !this.finished &&
@@ -471,14 +450,21 @@ class Game {
       this.balls.length < cnst.MAX_BALLS_IN_PLAY
     ) {
       const ball = Sprite.from(this.ballTexture);
+      ball.eventMode = 'static';
+      ball.cursor = 'pointer';
+      this.wiAddEventListener(ball, "click", ballClick);
+    this.wiAddEventListener(ball, "touchend", ballClick);
+      
+      ball.on('pointerdown',ballClick);
+      ball.on('mousedown',ballClick);
       ball.id = this.lastId++;
       ball.speed =
         (Math.random() * cnst.MAX_ADDITIONAL_SPEED + cnst.MIN_FALLING_SPEED) *
         this.speedMultiplier;
       // not the best idea when the screen is very wide
       ball.scale = {
-        x: Math.max(Math.min(this.app.screen.width / 1200, 0.7), 0.35),
-        y: Math.max(Math.min(this.app.screen.width / 1200, 0.7), 0.35),
+        x: Math.max(Math.min(this.app.screen.width / 1200, 0.05), 0.1),
+        y: Math.max(Math.min(this.app.screen.width / 1200, 0.05), 0.1),
       };
       ball.x = Math.max(
         Math.min(
@@ -490,8 +476,15 @@ class Game {
       ball.y = 20;
       ball.zIndex = 1;
       ball.tint = cnst.COLORS[Math.floor(Math.random() * cnst.COLORS.length)];
+      
+
+      
+      
       this.app.stage.addChild(ball);
       this.balls.push(ball);
+      function ballClick(){
+        console.log("clicked");
+      }
     }
     const spawnInterval =
       (Math.random() * cnst.MAX_SPAWN_TIME + cnst.MIN_SPAWN_TIME) /
