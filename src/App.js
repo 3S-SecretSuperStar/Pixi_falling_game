@@ -14,7 +14,11 @@ function App() {
     };
   }, []);
 
-  return <div ref={view}></div>;
+  return (
+    <>
+      <div ref={view}></div>
+    </>
+  );
 }
 
 export default App;

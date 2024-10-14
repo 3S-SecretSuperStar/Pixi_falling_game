@@ -36,7 +36,7 @@ class Game {
     this.ballTOId = null;
     this.ballTOStart = null;
     this.ballTOLeft = null;
-    
+
     // this.canvas = document.createElement('canvas');
     // this.view = this.canvas.transferControlToOffscreen();
     this.app = new Application();
@@ -61,10 +61,10 @@ class Game {
 
     if (!this.gameId) return;
 
-      this.setupHud();
+    this.setupHud();
 
     this.setupPaddle();
-    
+
     this.app.ticker.add((d) => this.loop(d));
   };
 
@@ -73,9 +73,9 @@ class Game {
       Assets.load(require("./assets/paddle/paddle.png")),
       Assets.load(require("./assets/paddle/paddleLeft.png")),
       Assets.load(require("./assets/paddle/paddleRight.png")),
-      // Assets.load(require("./assets/bg/bg.png")),
       Assets.load(require("./assets/image/meteor.png")),
       Assets.load(require("./assets/paddle/paddle.png")),
+      Assets.load(require("./assets/image/destroy.png")),
     ]);
     this.paddleTextureNominal = textures[0];
     this.paddleTextureLeft = textures[1];
@@ -83,6 +83,7 @@ class Game {
     // this.bgTexture = textures[3];
     this.ballTexture = textures[3];
     this.startPauseButtonTexture = textures[4];
+    this.destroyTextrue = textures[5];
   };
 
   startPauseTimer = (sOrP) => {
@@ -121,17 +122,20 @@ class Game {
     const ballsToRemove = [];
     for (let i = 0; i < this.balls.length; i++) {
       const ball = this.balls[i];
-      ball.y += ball.speed * d;
-      if (ball.y >= this.app.screen.height) {
+      if (ball.isDestroyed == 0) {
+        if (ball.isLeft == 1) {
+          ball.x += ball.xSpeed * d;
+        } else {
+          ball.x -= ball.xSpeed * d;
+        }
+        ball.y += ball.ySpeed * d;
+        ball.xSpeed += ball.accSpeed * 0.5;
+      } else if (Date.now() - ball.destroyedTime > 500) {
+        ballsToRemove.push(ball);
+      }
+      if (ball.y >= this.app.screen.height || ball.x >= this.app.screen.width) {
         ballsToRemove.push(ball);
         // this.updateLost(this.lostBalls + 1);
-      } else if (this.ballCollided(ball)) {
-        ballsToRemove.push(ball);
-        this.updateScore(this.score + 1);
-        this.paddle.tint = ball.tint;
-        setTimeout(() => {
-          this.paddle.tint = 0xffffff;
-        }, 350);
       }
     }
     for (let i = 0; i < ballsToRemove.length; i++) {
@@ -143,24 +147,9 @@ class Game {
     }
   };
 
-  ballCollided = (ball) => {
-    return (
-      this.paddle.x < ball.x + ball.width &&
-      this.paddle.x + this.paddle.width > ball.x &&
-      this.paddle.y < ball.y + ball.height &&
-      this.paddle.y + this.paddle.height / 2 > ball.y + ball.height / 4
-    );
-  };
-
   onStartPauseClick = () => {
     this.startPauseGame();
   };
-
-  // updateCursor = () => {
-  //   const newCursor = !this.finished && this.inPlay ? "none" : "initial";
-  //   this.app.renderer.events.cursorStyles.default = newCursor;
-  //   this.app.renderer.events.setCursor(newCursor);
-  // };
 
   startPauseGame = (pause) => {
     if (!this.started || (!pause && this.finished)) {
@@ -189,22 +178,6 @@ class Game {
     this.startPauseText.y =
       this.startPauseCont.height / 2 - this.startPauseText.height / 2;
   };
-
-  // gameOver = () => {
-  //   this.updateStartPauseText("Restart");
-  //   this.inPlay = false;
-  //   this.finished = true;
-  //   this.started = false;
-  //   // this.updateCursor();
-  //   this.gameOverText = new Text("Game over");
-  //   this.gameOverText.x = this.app.screen.width * 0.5 - this.gameOverText.width / 2;
-  //   this.gameOverText.y = this.app.screen.height * 0.5;
-  //   this.gameOverText.zIndex = 100;
-  //   this.app.stage.addChild(this.gameOverText);
-  //   this.startPauseTimer(false);
-  //   // this.updateLost(cnst.LOST_ALLOWED);
-  //   clearTimeout(this.ballTOId);
-  // };
 
   restartGame = () => {
     clearTimeout(this.ballTOId);
@@ -236,27 +209,12 @@ class Game {
       // const healthThreshold = Math.floor(
       //   this.speedMultiplier * cnst.LEVEL_THRESHOLD
       // );
-    //   if (newScore % healthThreshold === 0 && this.lostBalls > 0)
-    //     this.updateLost(this.lostBalls - 1);
+      //   if (newScore % healthThreshold === 0 && this.lostBalls > 0)
+      //     this.updateLost(this.lostBalls - 1);
     }
     this.score = newScore;
     this.scoreText.text = "Score: " + this.score;
   };
-
-  // updateLost = (newLost) => {
-  //   this.lostBalls = newLost;
-  //   const hpPerc = ((cnst.LOST_ALLOWED - this.lostBalls) / cnst.LOST_ALLOWED) * 100;
-  //   this.healthCont.removeChild(this.currentHpBar);
-  //   this.currentHpBar = this.createHpBar(hpPerc, cnst.HEALTH_BAR_COLOR);
-  //   this.healthCont.addChild(this.currentHpBar);
-  // };
-
-  // updateLevel = (change) => {
-  //   if (!change) this.level = 1;
-  //   else this.level += change;
-  //   this.speedMultiplier = 1 + 0.04 * this.level;
-  //   this.levelText.text = "Level: " + this.level;
-  // };
 
   setupHud = () => {
     // todo: set anchor to middle for pretty much everything
@@ -277,9 +235,9 @@ class Game {
     this.startPauseCont.y = this.app.screen.height * 0.053;
     this.startPauseCont.zIndex = 100;
     this.startPauseCont.interactive = true;
-    this.wiAddEventListener(this.startPauseCont, "click", this.onStartPauseClick);
-    this.wiAddEventListener(this.startPauseCont, "touchend", this.onStartPauseClick);
-    this.initializeGyro();
+    this.startPauseCont.on("click", this.onStartPauseClick);
+    this.startPauseCont.on("touchend", this.onStartPauseClick);
+    // this.initializeGyro();
 
     this.updateStartPauseText("Start");
 
@@ -292,107 +250,12 @@ class Game {
     this.healthCont.zIndex = 100;
     this.app.stage.addChild(this.healthCont);
 
-    // const blackHpBar = this.createHpBar(cnst.MAX_HP, 0x000000);
-    // this.healthCont.addChild(blackHpBar);
-
-    // this.currentHpBar = this.createHpBar(cnst.MAX_HP, cnst.HEALTH_BAR_COLOR);
-
-    // this.healthCont.addChild(this.currentHpBar);
-
-    // const healthText = new Text("HP");
-    // healthText.anchor.x = 0.5;
-    // healthText.anchor.y = 0.5;
-    // healthText.style.fill = 0xff0000;
-    // healthText.x = this.healthCont.width / 2;
-    // healthText.y = this.healthCont.height / 2;
-    // healthText.scale = {
-    //   x: 1,
-    //   y: 1,
-    // };
-    // healthText.zIndex = 1;
-    // this.healthCont.addChild(healthText);
-
     this.scoreText = new Text("Score: 0");
     this.scoreText.x = this.app.screen.width * 0.05;
     this.scoreText.y = this.app.screen.height * 0.1;
     this.scoreText.zIndex = 100;
     this.app.stage.addChild(this.scoreText);
-
-    // this.levelText = new Text("Level: 1");
-    // this.levelText.x = this.app.screen.width * 0.05;
-    // this.levelText.y = this.app.screen.height * 0.15;
-    // this.levelText.zIndex = 100;
-    // this.app.stage.addChild(this.levelText);
-
-    // this.timerText = new Text("Time:");
-    // this.timerText.x = this.app.screen.width * 0.05;
-    // this.timerText.y = this.app.screen.height * 0.2;
-    // this.timerText.zIndex = 100;
-    // this.app.stage.addChild(this.timerText);
-    // this.updateTimerText(true);
   };
-
-  initializeGyro = () => {
-    if ("DeviceMotionEvent" in window) {
-      // requestPermission does not exist on android or pc browsers
-      if ("requestPermission" in DeviceMotionEvent) {
-        console.log("getPermission exists");
-        DeviceMotionEvent.requestPermission()
-          .then((response) => {
-            if (response === "granted") {
-              this.wiAddEventListener(window, "deviceorientation", this.onGyro);
-            }
-          })
-          .catch((error) => {
-            // todo: handle it
-            console.log(error);
-          });
-      } else {
-        console.log("requestPermission in DeviceMotionEvent does not exist..");
-        this.wiAddEventListener(window, "deviceorientation", this.onGyro);
-      }
-    } else {
-      // todo: handle it
-      console.log("DeviceMotionEvent in window does not exist..");
-    }
-  };
-
-  onGyro = (event) => {
-    // gamma = Degrees per second around the y axis
-    const gamma = event.gamma;
-
-    if (gamma > 5 || gamma < -5) {
-      let vx;
-      const avx = Math.abs(this.velocityX);
-      // TODO: THIS SHOULD BE A MATHEMATICAL FUNCTION, NOT A SWITCH LOL
-      if (avx < 0.1) vx = this.velocityX * 14;
-      else if (avx < 0.15) vx = this.velocityX * 11;
-      else if (avx < 0.2) vx = this.velocityX * 9;
-      else if (avx < 0.4) vx = this.velocityX * 4;
-      else if (avx < 0.6) vx = this.velocityX * 3.5;
-      else if (avx < 1.2) vx = this.velocityX * 2;
-      else vx = this.velocityX;
-      this.velocityX = vx + gamma * (1 / 120); // 1 / 120 is sth like ... Sensor refresh rate? find out what that is
-
-      this.setPaddlePosition(this.paddle.x + this.velocityX * 3);
-    } else {
-      this.velocityX = 0.0;
-    }
-  };
-
-  // createHpBar = (currentHp, color) => {
-  //   const hpBar = new Graphics();
-  //   hpBar.beginFill(color);
-
-  //   const hpPortion = currentHp / cnst.MAX_HP;
-
-  //   hpBar.drawPolygon([7, 0, 7 + 80 * hpPortion, 0, 80 * hpPortion, 20, 0, 20]);
-  //   hpBar.endFill();
-  //   hpBar.scale.x = this.app.screen.width / 300;
-  //   // hpBar.scale.y = this.app.screen.height / 500;
-  //   hpBar.scale.y = 1.5;
-  //   return hpBar;
-  // };
 
   setupPaddle = () => {
     this.paddle = Sprite.from(this.paddleTextureNominal);
@@ -401,25 +264,6 @@ class Game {
       x: Math.max(Math.min(this.app.screen.width / 1000, 0.9), 0.35),
       y: Math.max(Math.min(this.app.screen.height / 1000, 0.9), 0.35),
     };
-    // this.paddle.x = this.app.screen.width / 2 - this.paddle.width / 2;
-    // this.paddle.y =
-    //   this.app.screen.height -
-    //   this.paddle.height -
-    //   this.app.screen.height * cnst.PADDLE_BOTTOM_OFFSET_PERCENTAGE;
-    // this.paddle.zIndex = 2;
-    // this.paddle.tint = 0xffffff;
-
-    // todo: set anchor to middle for pretty much everything
-    // this.paddle.anchor.x = 0.5;
-    // this.paddle.anchor.y = 0.5;
-
-    // this.app.stage.addChild(this.paddle);
-
-  };
-
-  wiAddEventListener = (object, key, cb) => {
-    object.addEventListener(key, cb);
-    this.eventListeners.push({ object, key, cb });
   };
 
   setPaddlePosition = (clientX) => {
@@ -442,7 +286,7 @@ class Game {
       this.paddle.texture = this.paddleTextureNominal;
     }, 200);
   };
- 
+
   generateBall = () => {
     if (
       !this.finished &&
@@ -450,18 +294,18 @@ class Game {
       this.balls.length < cnst.MAX_BALLS_IN_PLAY
     ) {
       const ball = Sprite.from(this.ballTexture);
-      ball.eventMode = 'static';
+      ball.interactive = true;
+      ball.eventMode = 'dynamic';
       ball.cursor = 'pointer';
-      this.wiAddEventListener(ball, "click", ballClick);
-    this.wiAddEventListener(ball, "touchend", ballClick);
-      
-      ball.on('pointerdown',ballClick);
-      ball.on('mousedown',ballClick);
+      ball.isDestroyed = 0;
+      ball.destroyedTime = 0;
       ball.id = this.lastId++;
-      ball.speed =
-        (Math.random() * cnst.MAX_ADDITIONAL_SPEED + cnst.MIN_FALLING_SPEED) *
-        this.speedMultiplier;
-      // not the best idea when the screen is very wide
+      ball.ySpeed =
+      (Math.random() * cnst.MAX_ADDITIONAL_SPEED + cnst.MIN_FALLING_SPEED) *
+      this.speedMultiplier;
+      ball.xSpeed = ball.ySpeed / 2;
+      const time = this.app.screen.height / ball.ySpeed;
+      ball.accSpeed = (this.app.screen.width - ball.xSpeed * time) * 2 / Math.pow(time, 2);
       ball.scale = {
         x: Math.max(Math.min(this.app.screen.width / 1200, 0.05), 0.1),
         y: Math.max(Math.min(this.app.screen.width / 1200, 0.05), 0.1),
@@ -473,19 +317,26 @@ class Game {
         ),
         cnst.MIN_BALL_SIDE_OFFSET
       );
+      ball.isLeft = ball.x > this.app.screen.width / 2 ? 0 : 1;
       ball.y = 20;
       ball.zIndex = 1;
-      ball.tint = cnst.COLORS[Math.floor(Math.random() * cnst.COLORS.length)];
-      
-
-      
-      
-      this.app.stage.addChild(ball);
+      ball.on('pointerdown', () => {
+        if (ball.isDestroyed == 0) {        
+          ball.texture = this.destroyTextrue;
+          ball.isDestroyed = 1;
+          ball.destroyedTime = Date.now();
+          ball.scale = {
+            x: 1,
+            y: 1,
+          };
+          ball.x -= ball.width / 2;
+          ball.y -= ball.height / 2;
+        }
+      });
       this.balls.push(ball);
-      function ballClick(){
-        console.log("clicked");
-      }
+      this.app.stage.addChild(ball);
     }
+    
     const spawnInterval =
       (Math.random() * cnst.MAX_SPAWN_TIME + cnst.MIN_SPAWN_TIME) /
       this.speedMultiplier;
