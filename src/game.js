@@ -4,8 +4,8 @@ import {
   Assets,
   Text,
   Container,
-  TilingSprite,
-  Graphics,
+  // TilingSprite,
+  // Graphics,
 } from "pixi.js";
 import cnst from "./constants";
 
@@ -16,14 +16,14 @@ class Game {
     this.finished = false;
     this.started = false;
     this.lastId = 0;
-    this.paddle = null;
-    this.balls = [];
+    // this.paddle = null;
+    this.elements = [];
     this.startPauseCont = null;
     this.startPauseText = null;
     this.scoreText = null;
-    this.lostBalls = 0;
+    this.lostelements = 0;
     this.score = 0;
-    this.gameOverText = null;
+    // this.gameOverText = null;
     this.level = 1;
     this.speedMultiplier = 1 + 0.1 * this.level;
     this.healthCont = null;
@@ -33,9 +33,10 @@ class Game {
     this.lastTimerStart = 0;
     this.timerIntervalId = 0;
     this.velocityX = 0.0;
-    this.ballTOId = null;
-    this.ballTOStart = null;
-    this.ballTOLeft = null;
+    this.craterTOId = null;
+    this.craterTOStart = null;
+    this.craterTOLeft = null;
+    this.score = 0;
 
     // this.canvas = document.createElement('canvas');
     // this.view = this.canvas.transferControlToOffscreen();
@@ -63,27 +64,25 @@ class Game {
 
     this.setupHud();
 
-    this.setupPaddle();
+    // this.setupPaddle();
 
     this.app.ticker.add((d) => this.loop(d));
   };
-
+  
+ 
   loadAssets = async () => {
     const textures = await Promise.all([
-      Assets.load(require("./assets/paddle/paddle.png")),
-      Assets.load(require("./assets/paddle/paddleLeft.png")),
-      Assets.load(require("./assets/paddle/paddleRight.png")),
       Assets.load(require("./assets/image/meteor.png")),
-      Assets.load(require("./assets/paddle/paddle.png")),
+      Assets.load(require("./assets/image/crater.png")),
       Assets.load(require("./assets/image/destroy.png")),
     ]);
-    this.paddleTextureNominal = textures[0];
-    this.paddleTextureLeft = textures[1];
-    this.paddleTextureRight = textures[2];
-    // this.bgTexture = textures[3];
-    this.ballTexture = textures[3];
-    this.startPauseButtonTexture = textures[4];
-    this.destroyTextrue = textures[5];
+    // this.paddleTextureNominal = textures[0];
+    // this.paddleTextureLeft = textures[1];
+    // this.paddleTextureRight = textures[2];
+    this.meteorTexture = textures[0];
+    this.startPauseButtonTexture = textures[1];
+    this.craterTexture = textures[1];
+    this.destroyTextrue = textures[2];
   };
 
   startPauseTimer = (sOrP) => {
@@ -113,37 +112,57 @@ class Game {
   //   //   second: "2-digit",
   //   // });
   //   // this.timerText.text = "Time: " + formattedTime;
-  //   if (timerSeconds % cnst.TIME_THRESHOLD === 0 && this.lostBalls > 0)
-  //     this.updateLost(this.lostBalls - 0.5);
+  //   if (timerSeconds % cnst.TIME_THRESHOLD === 0 && this.lostelements > 0)
+  //     this.updateLost(this.lostelements - 0.5);
   // };
 
   loop = (d) => {
     if (!this.inPlay) return;
-    const ballsToRemove = [];
-    for (let i = 0; i < this.balls.length; i++) {
-      const ball = this.balls[i];
-      if (ball.isDestroyed == 0) {
-        if (ball.isLeft == 1) {
-          ball.x += ball.xSpeed * d;
-        } else {
-          ball.x -= ball.xSpeed * d;
+    const elementsToRemove = [];
+    for (let i = 0; i < this.elements.length; i++) {
+      if (this.elements[i].type  === "crater") {
+        const crater = this.elements[i];
+        if (crater.isDestroyed === 0) {
+          if (crater.isLeft === 1) {
+            crater.x += crater.xSpeed * d;
+          } else {
+            crater.x -= crater.xSpeed * d;
+          }
+          crater.y += crater.ySpeed * d;
+          crater.xSpeed += crater.accSpeed * 0.5;
+        } else if (Date.now() - crater.destroyedTime > 500) {
+          elementsToRemove.push(crater);
         }
-        ball.y += ball.ySpeed * d;
-        ball.xSpeed += ball.accSpeed * 0.5;
-      } else if (Date.now() - ball.destroyedTime > 500) {
-        ballsToRemove.push(ball);
+        if (crater.y >= this.app.screen.height || crater.x >= this.app.screen.width) {
+          elementsToRemove.push(crater);
+          // this.updateLost(this.lostelements + 1);
+        }
       }
-      if (ball.y >= this.app.screen.height || ball.x >= this.app.screen.width) {
-        ballsToRemove.push(ball);
-        // this.updateLost(this.lostBalls + 1);
+      else {
+        const meteor = this.elements[i];
+        if (meteor.isDestroyed === 0) {
+          
+          meteor.y += meteor.speed * d;
+          // meteor.speed += meteor.speed * 0.5;
+        } else if (Date.now() - meteor.destroyedTime > 500) {
+          elementsToRemove.push(meteor);
+        }
+        if (meteor.y >= this.app.screen.height || meteor.x >= this.app.screen.width) {
+          elementsToRemove.push(meteor);
+          // this.updateLost(this.lostelements + 1);
+        }
       }
+
+
     }
-    for (let i = 0; i < ballsToRemove.length; i++) {
-      const ball = ballsToRemove[i];
-      let _balls = [...this.balls];
-      _balls = _balls.filter((_ball) => _ball.id !== ball.id);
-      this.balls = [..._balls];
-      this.app.stage.removeChild(ball);
+    for (let i = 0; i < elementsToRemove.length; i++) {
+     
+        const crater = elementsToRemove[i];
+      let _elements = [...this.elements];
+      _elements = _elements.filter((_crater) => _crater.id !== crater.id);
+      this.elements = [..._elements];
+      this.app.stage.removeChild(crater);
+      
     }
   };
 
@@ -158,13 +177,13 @@ class Game {
     }
     this.inPlay = pause ? false : !this.inPlay;
     if (!this.inPlay) {
-      clearTimeout(this.ballTOId);
-      this.ballTOLeft -= Date.now() - this.ballTOStart;
-    } else if (this.ballTOStart > 0 && this.ballTOLeft > 0) {
-      this.ballTOStart = Date.now();
-      this.ballTOId = setTimeout(() => {
-        this.generateBall();
-      }, this.ballTOLeft);
+      clearTimeout(this.craterTOId);
+      this.craterTOLeft -= Date.now() - this.craterTOStart;
+    } else if (this.craterTOStart > 0 && this.craterTOLeft > 0) {
+      this.craterTOStart = Date.now();
+      this.craterTOId = setTimeout(() => {
+        this.generateElement();
+      }, this.craterTOLeft);
     }
     // this.updateCursor();
     this.startPauseTimer(this.inPlay);
@@ -180,22 +199,22 @@ class Game {
   };
 
   restartGame = () => {
-    clearTimeout(this.ballTOId);
-    this.ballTOStart = null;
+    clearTimeout(this.craterTOId);
+    this.craterTOStart = null;
     this.updateStartPauseText("Pause");
     this.inPlay = true;
     this.finished = false;
     this.started = true;
     // this.updateCursor();
-    this.lostBalls = 0;
+    this.lostelements = 0;
     this.updateScore(0);
     // this.updateLost(0);
     // this.updateLevel();
-    for (let i = 0; i < this.balls.length; i++) {
-      this.app.stage.removeChild(this.balls[i]);
+    for (let i = 0; i < this.elements.length; i++) {
+      this.app.stage.removeChild(this.elements[i]);
     }
-    this.balls = [];
-    this.generateBall();
+    this.elements = [];
+    this.generateElement();
     this.app.stage.removeChild(this.gameOverText);
     this.gameOverText = null;
     this.timer = 0;
@@ -209,8 +228,8 @@ class Game {
       // const healthThreshold = Math.floor(
       //   this.speedMultiplier * cnst.LEVEL_THRESHOLD
       // );
-      //   if (newScore % healthThreshold === 0 && this.lostBalls > 0)
-      //     this.updateLost(this.lostBalls - 1);
+      //   if (newScore % healthThreshold === 0 && this.lostcraters > 0)
+      //     this.updateLost(this.lostcraters - 1);
     }
     this.score = newScore;
     this.scoreText.text = "Score: " + this.score;
@@ -243,12 +262,12 @@ class Game {
 
     this.app.stage.addChild(this.startPauseCont);
 
-    this.healthCont = new Container();
-    this.healthCont.sortableChildren = true;
-    this.healthCont.x = this.app.screen.width * 0.05;
-    this.healthCont.y = this.app.screen.height * 0.055;
-    this.healthCont.zIndex = 100;
-    this.app.stage.addChild(this.healthCont);
+    // this.healthCont = new Container();
+    // this.healthCont.sortableChildren = true;
+    // this.healthCont.x = this.app.screen.width * 0.05;
+    // this.healthCont.y = this.app.screen.height * 0.055;
+    // this.healthCont.zIndex = 100;
+    // this.app.stage.addChild(this.healthCont);
 
     this.scoreText = new Text("Score: 0");
     this.scoreText.x = this.app.screen.width * 0.05;
@@ -257,93 +276,142 @@ class Game {
     this.app.stage.addChild(this.scoreText);
   };
 
-  setupPaddle = () => {
-    this.paddle = Sprite.from(this.paddleTextureNominal);
-    // not the best idea when the screen is very wide
-    this.paddle.scale = {
-      x: Math.max(Math.min(this.app.screen.width / 1000, 0.9), 0.35),
-      y: Math.max(Math.min(this.app.screen.height / 1000, 0.9), 0.35),
-    };
-  };
+  // setupPaddle = () => {
+  //   // this.paddle = Sprite.from(this.paddleTextureNominal);
+  //   // not the best idea when the screen is very wide
+  //   this.paddle.scale = {
+  //     x: Math.max(Math.min(this.app.screen.width / 1000, 0.9), 0.35),
+  //     y: Math.max(Math.min(this.app.screen.height / 1000, 0.9), 0.35),
+  //   };
+  // };
 
-  setPaddlePosition = (clientX) => {
-    if (!this.inPlay) return;
-    const newX = Math.min(
-      Math.max(0, clientX),
-      this.app.screen.width - this.paddle.width
-    );
-    if (newX > this.app.screen.width - this.paddle.width) {
-      newX = this.app.screen.width - this.paddle.width;
-    } else if (newX < 0) {
-      newX = 0;
-    }
-    const lOrR = this.paddle.x < newX;
-    this.paddle.x = newX;
-    if (lOrR) this.paddle.texture = this.paddleTextureRight;
-    else this.paddle.texture = this.paddleTextureLeft;
-    clearTimeout(this.paddleTextureTimeout);
-    this.paddleTextureTimeout = setTimeout(() => {
-      this.paddle.texture = this.paddleTextureNominal;
-    }, 200);
-  };
+  // setPaddlePosition = (clientX) => {
+  //   if (!this.inPlay) return;
+  //   const newX = Math.min(
+  //     Math.max(0, clientX),
+  //     this.app.screen.width - this.paddle.width
+  //   );
+  //   if (newX > this.app.screen.width - this.paddle.width) {
+  //     newX = this.app.screen.width - this.paddle.width;
+  //   } else if (newX < 0) {
+  //     newX = 0;
+  //   }
+  //   // const lOrR = this.paddle.x < newX;
+  //   // this.paddle.x = newX;
+  //   // if (lOrR) this.paddle.texture = this.paddleTextureRight;
+  //   // else this.paddle.texture = this.paddleTextureLeft;
+  //   // clearTimeout(this.paddleTextureTimeout);
+  //   // this.paddleTextureTimeout = setTimeout(() => {
+  //   //   this.paddle.texture = this.paddleTextureNominal;
+  //   // }, 200);
+  // };
 
-  generateBall = () => {
+  generateElement = () => {
     if (
       !this.finished &&
       this.inPlay &&
-      this.balls.length < cnst.MAX_BALLS_IN_PLAY
+      this.elements.length < cnst.MAX_Element_IN_PLAY
     ) {
-      const ball = Sprite.from(this.ballTexture);
-      ball.interactive = true;
-      ball.eventMode = 'dynamic';
-      ball.cursor = 'pointer';
-      ball.isDestroyed = 0;
-      ball.destroyedTime = 0;
-      ball.id = this.lastId++;
-      ball.ySpeed =
-      (Math.random() * cnst.MAX_ADDITIONAL_SPEED + cnst.MIN_FALLING_SPEED) *
-      this.speedMultiplier;
-      ball.xSpeed = ball.ySpeed / 2;
-      const time = this.app.screen.height / ball.ySpeed;
-      ball.accSpeed = (this.app.screen.width - ball.xSpeed * time) * 2 / Math.pow(time, 2);
-      ball.scale = {
-        x: Math.max(Math.min(this.app.screen.width / 1200, 0.05), 0.1),
-        y: Math.max(Math.min(this.app.screen.width / 1200, 0.05), 0.1),
+      const crater = Sprite.from(this.craterTexture);
+      crater.interactive = true;
+      crater.eventMode = 'dynamic';
+      crater.cursor = 'pointer';
+      crater.isDestroyed = 0;
+      crater.destroyedTime = 0;
+      crater.type = "crater"
+      crater.id = this.lastId++;
+      crater.ySpeed =
+        (Math.random() * cnst.MAX_ADDITIONAL_SPEED + cnst.MIN_FALLING_SPEED) *
+        this.speedMultiplier;
+      crater.xSpeed = crater.ySpeed / 2;
+      
+      const time = this.app.screen.height / crater.ySpeed;
+      crater.accSpeed = (this.app.screen.width - crater.xSpeed * time) * 2 / Math.pow(time, 2);
+      crater.scale = {
+        x: Math.max(Math.min(this.app.screen.width / 1200, 0.1), 0.2),
+        y: Math.max(Math.min(this.app.screen.width / 1200, 0.1), 0.2),
       };
-      ball.x = Math.max(
+      crater.x = Math.max(
         Math.min(
-          this.app.screen.width - ball.width - cnst.MIN_BALL_SIDE_OFFSET,
+          this.app.screen.width - crater.width - cnst.MIN_CRATER_SIDE_OFFSET,
           Math.floor(Math.random() * this.app.screen.width)
         ),
-        cnst.MIN_BALL_SIDE_OFFSET
+        cnst.MIN_CRATER_SIDE_OFFSET
       );
-      ball.isLeft = ball.x > this.app.screen.width / 2 ? 0 : 1;
-      ball.y = 20;
-      ball.zIndex = 1;
-      ball.on('pointerdown', () => {
-        if (ball.isDestroyed == 0) {        
-          ball.texture = this.destroyTextrue;
-          ball.isDestroyed = 1;
-          ball.destroyedTime = Date.now();
-          ball.scale = {
+      crater.isLeft = crater.x > this.app.screen.width / 2 ? 0 : 1;
+      crater.y = 20;
+      crater.zIndex = 1;
+      crater.on('pointerdown', () => {
+        if (crater.isDestroyed === 0) {
+          crater.texture = this.destroyTextrue;
+          crater.isDestroyed = 1;
+          crater.destroyedTime = Date.now();
+          crater.scale = {
             x: 1,
             y: 1,
           };
-          ball.x -= ball.width / 2;
-          ball.y -= ball.height / 2;
+          crater.x -= crater.width / 2;
+          crater.y -= crater.height / 2;
+        }
+        this.score+=1;
+      });
+
+      const meteor = Sprite.from(this.meteorTexture);
+      meteor.interactive = true;
+      meteor.eventMode = 'dynamic';
+      meteor.cursor = 'pointer';
+      meteor.isDestroyed = 0;
+      meteor.destroyedTime = 0;
+      meteor.type = "meteor"
+      meteor.id = this.lastId++;
+      meteor.speed =
+        (Math.random() * cnst.MAX_ADDITIONAL_SPEED + cnst.MIN_FALLING_SPEED) *
+        this.speedMultiplier;
+
+      meteor.scale = {
+        x: Math.max(Math.min(this.app.screen.width / 1200, 0.05), 0.1),
+        y: Math.max(Math.min(this.app.screen.width / 1200, 0.05), 0.1),
+      };
+      meteor.x = Math.max(
+        Math.min(
+          this.app.screen.width - meteor.width - cnst.MIN_CRATER_SIDE_OFFSET,
+          Math.floor(Math.random() * this.app.screen.width)
+        ),
+        cnst.MIN_CRATER_SIDE_OFFSET
+      );
+      meteor.isLeft = meteor.x > this.app.screen.width / 2 ? 0 : 1;
+      meteor.y = 20;
+      meteor.zIndex = 1;
+      meteor.on('pointerdown', () => {
+        if (meteor.isDestroyed === 0) {
+          meteor.texture = this.destroyTextrue;
+          meteor.isDestroyed = 1;
+          meteor.destroyedTime = Date.now();
+          meteor.scale = {
+            x: 1,
+            y: 1,
+          };
+          meteor.x -= meteor.width / 2;
+          meteor.y -= meteor.height / 2;
         }
       });
-      this.balls.push(ball);
-      this.app.stage.addChild(ball);
+
+
+      console.log("crater", crater)
+      console.log("meteor", meteor)
+      this.elements.push(crater);
+      this.elements.push(meteor);
+      this.app.stage.addChild(crater);
+      this.app.stage.addChild(meteor);
     }
-    
+
     const spawnInterval =
       (Math.random() * cnst.MAX_SPAWN_TIME + cnst.MIN_SPAWN_TIME) /
       this.speedMultiplier;
-    this.ballTOLeft = spawnInterval;
-    this.ballTOStart = Date.now();
-    this.ballTOId = setTimeout(() => {
-      this.generateBall();
+    this.craterTOLeft = spawnInterval;
+    this.craterTOStart = Date.now();
+    this.craterTOId = setTimeout(() => {
+      this.generateElement();
     }, spawnInterval);
   };
 
